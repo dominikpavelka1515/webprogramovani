@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETS2 Telemetry Logbook | GitHub Pages Edition</title>
+    <!-- Google Fonts: Orbitron & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Boční navigace / Cockpit Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-badge-box">LOG</div>
+                <div class="brand-text">
+                    <span class="brand-title">ETS2 LOGBOOK</span>
+                    <span class="brand-sub">TELEMETRY & FLEET</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button type="button" class="nav-item active" data-tab="dashboard">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <span>Dashboard</span>
+                </button>
+                <button type="button" class="nav-item" data-tab="logbook">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Záznam tras (Logbook)</span>
+                </button>
+                <button type="button" class="nav-item" data-tab="trucks">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                    <span>Vozový park (Tahače)</span>
+                </button>
+                <button type="button" class="nav-item" data-tab="data-management">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Záloha & Data</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-telemetry-status">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span class="status-label">GitHub Pages Edition</span>
+                </div>
+                <div class="status-meta">Client Storage: LocalStorage</div>
+            </div>
+        </aside>
+
+        <!-- Hlavní obsah -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <h1 id="pageHeading">Telemetrický Dashboard</h1>
+                    <p class="topbar-desc" id="pageSubHeading">Statistický souhrn všech odjetých zakázek a ekonomika flotily</p>
+                </div>
+                <div class="topbar-actions">
+                    <button type="button" class="btn btn-primary" onclick="switchTab('logbook')">
+                        <span>+ Zaznamenat jízdu</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Notifikace -->
+            <div id="notificationArea" class="flash-messages"></div>
+
+            <div class="content-body">
+                <!-- ==================== TAB 1: DASHBOARD ==================== -->
+                <section id="view-dashboard" class="tab-view active">
+                    <div class="kpi-grid">
+                        <div class="kpi-card accent-blue">
+                            <div class="kpi-header">
+                                <span class="kpi-title">CELKEM NAJETO</span>
+                                <span class="kpi-code">DIST</span>
+                            </div>
+                            <div class="kpi-value odometer-font"><span id="dashTotalDistance">0.0</span> <span class="unit">km</span></div>
+                            <div class="kpi-footer">Odjeto celkem <strong id="dashTotalTrips">0</strong> zakázek</div>
+                        </div>
+
+                        <div class="kpi-card accent-amber">
+                            <div class="kpi-header">
+                                <span class="kpi-title">SPÁLENÉ PALIVO</span>
+                                <span class="kpi-code">FUEL</span>
+                            </div>
+                            <div class="kpi-value odometer-font"><span id="dashTotalFuel">0.0</span> <span class="unit">L</span></div>
+                            <div class="kpi-footer">Náklady na naftu: <strong id="dashTotalFuelCost">0.00 €</strong></div>
+                        </div>
+
+                        <div class="kpi-card accent-green">
+                            <div class="kpi-header">
+                                <span class="kpi-title">ČISTÝ ZISK FLOTILY</span>
+                                <span class="kpi-code">PROFIT</span>
+                            </div>
+                            <div class="kpi-value odometer-font"><span id="dashTotalProfit">0.00</span> <span class="unit">€</span></div>
+                            <div class="kpi-footer">Hrubé tržby: <strong id="dashTotalRevenue">0.00 €</strong></div>
+                        </div>
+
+                        <div class="kpi-card accent-cyan">
+                            <div class="kpi-header">
+                                <span class="kpi-title">PRŮMĚRNÁ SPOTŘEBA</span>
+                                <span class="kpi-code">AVG</span>
+                            </div>
+                            <div class="kpi-value odometer-font"><span id="dashAvgConsumption">0.00</span> <span class="unit">l/100km</span></div>
+                            <div class="kpi-footer">Včetně vlivu tonáže nákladu</div>
+                        </div>
+                    </div>
+
+                    <div class="highlights-grid">
+                        <div class="highlight-card">
+                            <div class="card-badge">HLAVNÍ TAHAČ FLOTILY</div>
+                            <div id="dashTopTruckContainer">
+                                <div class="truck-highlight">
+                                    <div class="truck-highlight-badge">TAHAČ</div>
+                                    <div class="truck-highlight-info">
+                                        <h3 id="dashTopTruckName">--</h3>
+                                        <div class="plate-badge" id="dashTopTruckPlate">--</div>
+                                        <div class="highlight-meta">
+                                            <span>Zakázek: <strong id="dashTopTruckCount">0</strong></span>
+                                            <span>Ujeto: <strong id="dashTopTruckKm">0 km</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="highlight-card">
+                            <div class="card-badge">NEJZISKOVĚJŠÍ TRASA</div>
+                            <div id="dashTopRouteContainer">
+                                <div class="route-highlight">
+                                    <div class="route-cities">
+                                        <span class="city" id="dashTopRouteOrigin">--</span>
+                                        <span class="route-arrow">&rarr;</span>
+                                        <span class="city" id="dashTopRouteDestination">--</span>
+                                    </div>
+                                    <div class="route-stats">
+                                        <div class="route-stat-item">
+                                            <span class="lbl">Celkový čistý zisk</span>
+                                            <span class="val profit-green" id="dashTopRouteProfit">-- €</span>
+                                        </div>
+                                        <div class="route-stat-item">
+                                            <span class="lbl">Průměr / jízdu</span>
+                                            <span class="val" id="dashTopRouteAvg">-- €</span>
+                                        </div>
+                                        <div class="route-stat-item">
+                                            <span class="lbl">Frekvence</span>
+                                            <span class="val" id="dashTopRouteCount">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-chart-card">
+                        <div class="card-header-flex">
+                            <h2>Ekonomika zakázek (Zisk vs. Náklady na naftu)</h2>
+                            <span class="chart-tag">Telemetrická křivka</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="profitChart" height="90"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="recent-trips-card">
+                        <div class="card-header-flex">
+                            <h2>Poslední odjeté zakázky</h2>
+                            <button type="button" class="link-more" onclick="switchTab('logbook')">Zobrazit celý logbook &rarr;</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trasa</th>
+                                        <th>Tahač</th>
+                                        <th>Náklad</th>
+                                        <th>Vzdálenost</th>
+                                        <th>Spotřeba paliva</th>
+                                        <th>Náklady</th>
+                                        <th>Čistý zisk</th>
+                                        <th>Dokončeno</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashRecentTripsTableBody">
+                                    <!-- Renderováno přes JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== TAB 2: LOGBOOK ==================== -->
+                <section id="view-logbook" class="tab-view">
+                    <div class="logbook-grid">
+                        <div class="form-card" id="new-trip">
+                            <div class="card-header-flex">
+                                <h2>Nová odjetá zakázka</h2>
+                                <span class="badge-status">Automatický výpočet aktivní</span>
+                            </div>
+
+                            <form id="tripForm">
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label for="truck_id">Použitý tahač *</label>
+                                        <select name="truck_id" id="truck_id" required>
+                                            <option value="" disabled selected>-- Vyberte tahač z flotily --</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row cities-row">
+                                    <div class="form-group">
+                                        <label for="origin_city">Výchozí město *</label>
+                                        <input type="text" name="origin_city" id="origin_city" placeholder="např. Praha" required>
+                                    </div>
+                                    <div class="swap-btn-container">
+                                        <button type="button" id="swapCitiesBtn" class="btn btn-icon" title="Prohodit města">&harr;</button>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="destination_city">Cílové město *</label>
+                                        <input type="text" name="destination_city" id="destination_city" placeholder="např. Rotterdam" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row three-cols">
+                                    <div class="form-group">
+                                        <label for="distance_km">Vzdálenost (km) *</label>
+                                        <input type="number" step="0.1" name="distance_km" id="distance_km" placeholder="např. 890" required min="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cargo_name">Náklad *</label>
+                                        <input type="text" name="cargo_name" id="cargo_name" placeholder="např. Ocelové nosníky" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cargo_weight_t">Váha nákladu (tuny)</label>
+                                        <input type="number" step="0.1" name="cargo_weight_t" id="cargo_weight_t" placeholder="např. 22.5" value="0.0" min="0">
+                                    </div>
+                                </div>
+
+                                <div class="form-row three-cols">
+                                    <div class="form-group">
+                                        <label for="revenue">Výdělek / Odměna (€) *</label>
+                                        <input type="number" step="0.01" name="revenue" id="revenue" placeholder="např. 2850" required min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="diesel_price_per_l">Cena nafty (€/litr) *</label>
+                                        <input type="number" step="0.01" name="diesel_price_per_l" id="diesel_price_per_l" value="1.45" required min="0.1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cargo_category">Kategorie nákladu</label>
+                                        <select name="cargo_category" id="cargo_category">
+                                            <option value="Standardní zboží">Standardní zboží</option>
+                                            <option value="Těžká technika / Heavy Cargo">Těžká technika / Heavy Cargo</option>
+                                            <option value="Nebezpečný náklad (ADR)">Nebezpečný náklad (ADR)</option>
+                                            <option value="Křehký náklad (Elektronika / Sklo)">Křehký náklad</option>
+                                            <option value="Chlazené potraviny">Chlazené potraviny</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="notes">Poznámka k jízdě (volitelně)</label>
+                                    <input type="text" name="notes" id="notes" placeholder="např. Noční přejezd, bez poškození nákladu">
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary btn-large">
+                                        <span>Uložit jízdu do databáze</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Živý telemetrický panel -->
+                        <div class="live-calc-card">
+                            <div class="calc-header">
+                                <h3>ŽIVÁ KALKULACE ZAKÁZKY</h3>
+                                <span class="calc-tag">Real-Time Engine</span>
+                            </div>
+                            <p class="calc-desc">Hodnoty se dynamicky propočítávají na základě vybraného tahače, ujetých kilometrů a tonáže.</p>
+
+                            <div class="calc-display-grid">
+                                <div class="calc-box">
+                                    <span class="calc-label">Efektivní spotřeba</span>
+                                    <span class="calc-value" id="previewConsumption">--</span>
+                                    <span class="calc-unit">l / 100 km</span>
+                                </div>
+
+                                <div class="calc-box">
+                                    <span class="calc-label">Spálené palivo</span>
+                                    <span class="calc-value" id="previewFuel">--</span>
+                                    <span class="calc-unit">litrů</span>
+                                </div>
+
+                                <div class="calc-box">
+                                    <span class="calc-label">Náklady na naftu</span>
+                                    <span class="calc-value text-danger" id="previewFuelCost">--</span>
+                                    <span class="calc-unit">€</span>
+                                </div>
+
+                                <div class="calc-box highlight-profit">
+                                    <span class="calc-label">Čistý zisk</span>
+                                    <span class="calc-value text-success" id="previewProfit">--</span>
+                                    <span class="calc-unit">€</span>
+                                </div>
+                            </div>
+
+                            <div class="calc-meta-details">
+                                <div class="meta-row">
+                                    <span>Čistý zisk na 1 km:</span>
+                                    <strong id="previewProfitPerKm">-- € / km</strong>
+                                </div>
+                                <div class="meta-row">
+                                    <span>Nový stav tachometru:</span>
+                                    <strong id="previewNewOdometer">-- km</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historie zakázek -->
+                    <section class="trips-history-card">
+                        <div class="card-header-flex">
+                            <h2>Historie zakázek (<span id="tripsCountBadge">0</span>)</h2>
+                            <div class="search-box">
+                                <input type="text" id="tripSearchInput" placeholder="Filtrovat trasu, tahač, náklad...">
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table" id="tripsTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Trasa</th>
+                                        <th>Tahač</th>
+                                        <th>Náklad & Hmotnost</th>
+                                        <th>Vzdálenost</th>
+                                        <th>Spotřeba paliva</th>
+                                        <th>Náklady na naftu</th>
+                                        <th>Hrubý výdělek</th>
+                                        <th>Čistý zisk</th>
+                                        <th>Tachometr</th>
+                                        <th>Akce</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allTripsTableBody">
+                                    <!-- Renderováno přes JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- ==================== TAB 3: TRUCKS ==================== -->
+                <section id="view-trucks" class="tab-view">
+                    <div class="trucks-layout">
+                        <div class="trucks-grid" id="trucksCardsContainer">
+                            <!-- Renderováno přes JS -->
+                        </div>
+
+                        <div class="form-card add-truck-card">
+                            <div class="card-header-flex">
+                                <h2>Přidat nový tahač do flotily</h2>
+                            </div>
+                            
+                            <form id="addTruckForm">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="truck_brand">Značka výrobce *</label>
+                                        <select name="brand" id="truck_brand" required>
+                                            <option value="Scania">Scania</option>
+                                            <option value="Volvo">Volvo</option>
+                                            <option value="MAN">MAN</option>
+                                            <option value="DAF">DAF</option>
+                                            <option value="Mercedes-Benz">Mercedes-Benz</option>
+                                            <option value="Renault">Renault Trucks</option>
+                                            <option value="Iveco">Iveco</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="truck_model">Model & konfigurace *</label>
+                                        <input type="text" name="model" id="truck_model" placeholder="např. FH16 750 Globetrotter" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="truck_plate">Registrační značka (SPZ) *</label>
+                                        <input type="text" name="license_plate" id="truck_plate" placeholder="např. 1AB 1234" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="truck_tank">Kapacita nádrže (litry) *</label>
+                                        <input type="number" step="10" name="tank_capacity_l" id="truck_tank" value="1400" required min="100">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="truck_consumption">Průměrná spotřeba bez zátěže (l/100km) *</label>
+                                        <input type="number" step="0.1" name="base_consumption_l_100km" id="truck_consumption" value="30.5" required min="5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="truck_odometer">Počáteční stav tachometru (km)</label>
+                                        <input type="number" step="0.1" name="current_odometer_km" id="truck_odometer" value="0.0" min="0">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="truck_notes">Poznámka (převodovka, retardér, kabina)</label>
+                                    <input type="text" name="notes" id="truck_notes" placeholder="např. 6x2/4 tahač, 16st. automatická převodovka">
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <span>Přidat tahač do garáže</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== TAB 4: DATA MANAGEMENT ==================== -->
+                <section id="view-data-management" class="tab-view">
+                    <div class="form-card">
+                        <div class="card-header-flex">
+                            <h2>Správa dat & Záloha pro GitHub Pages</h2>
+                            <span class="badge-status">Klientská záloha</span>
+                        </div>
+                        <p class="calc-desc">Tato aplikace na GitHub Pages ukládá data přímo do vašeho webového prohlížeče (LocalStorage). Můžete si kdykoliv stáhnout kompletní JSON zálohu nebo data přenést na jiný počítač.</p>
+
+                        <div class="form-row" style="margin-top: 1.5rem; gap: 1rem;">
+                            <button type="button" class="btn btn-primary" onclick="exportDataToJson()">
+                                <span>Exportovat data (Stáhnout JSON zálohu)</span>
+                            </button>
+                            
+                            <label class="btn btn-icon" style="width: auto; padding: 0.65rem 1.25rem; cursor: pointer;">
+                                <span>Importovat ze souboru JSON</span>
+                                <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importDataFromJson(event)">
+                            </label>
+
+                            <button type="button" class="btn btn-delete" style="padding: 0.65rem 1.25rem;" onclick="resetToSampleData()">
+                                <span>Resetovat na výchozí data ETS2</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Client SPA script -->
+    <script src="static/js/app.js"></script>
+</body>
+</html>

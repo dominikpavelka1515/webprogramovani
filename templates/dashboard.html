@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}ETS2 Dashboard & Statistiky{% endblock %}
+{% block page_title %}Telemetrický Dashboard{% endblock %}
+{% block page_subtitle %}Statistický souhrn všech odjetých zakázek a ekonomika flotily{% endblock %}
+
+{% block content %}
+<!-- Hlavní KPI karty -->
+<section class="kpi-grid">
+    <div class="kpi-card accent-blue">
+        <div class="kpi-header">
+            <span class="kpi-title">CELKEM NAJETO</span>
+            <span class="kpi-code">DIST</span>
+        </div>
+        <div class="kpi-value odometer-font">{{ "{:,.1f}".format(stats.total_distance_km) }} <span class="unit">km</span></div>
+        <div class="kpi-footer">Odjeto celkem <strong>{{ stats.total_trips }}</strong> zakázek</div>
+    </div>
+
+    <div class="kpi-card accent-amber">
+        <div class="kpi-header">
+            <span class="kpi-title">SPÁLENÉ PALIVO</span>
+            <span class="kpi-code">FUEL</span>
+        </div>
+        <div class="kpi-value odometer-font">{{ "{:,.1f}".format(stats.total_fuel_l) }} <span class="unit">L</span></div>
+        <div class="kpi-footer">Náklady na naftu: <strong>{{ "{:,.2f}".format(stats.total_fuel_cost) }} €</strong></div>
+    </div>
+
+    <div class="kpi-card accent-green">
+        <div class="kpi-header">
+            <span class="kpi-title">ČISTÝ ZISK FLOTILY</span>
+            <span class="kpi-code">PROFIT</span>
+        </div>
+        <div class="kpi-value odometer-font">{{ "{:,.2f}".format(stats.total_net_profit) }} <span class="unit">€</span></div>
+        <div class="kpi-footer">Hrubé tržby: <strong>{{ "{:,.2f}".format(stats.total_revenue) }} €</strong></div>
+    </div>
+
+    <div class="kpi-card accent-cyan">
+        <div class="kpi-header">
+            <span class="kpi-title">PRŮMĚRNÁ SPOTŘEBA</span>
+            <span class="kpi-code">AVG</span>
+        </div>
+        <div class="kpi-value odometer-font">{{ stats.avg_consumption }} <span class="unit">l/100km</span></div>
+        <div class="kpi-footer">Včetně vlivu hmotnosti nákladu</div>
+    </div>
+</section>
+
+<!-- Zvýrazněné metriky (Nejpoužívanější kamion & Nejziskovější trasa) -->
+<section class="highlights-grid">
+    <div class="highlight-card">
+        <div class="card-badge">HLAVNÍ TAHAČ FLOTILY</div>
+        {% if stats.most_used_truck %}
+            <div class="truck-highlight">
+                <div class="truck-highlight-badge">TAHAČ</div>
+                <div class="truck-highlight-info">
+                    <h3>{{ stats.most_used_truck.brand }} {{ stats.most_used_truck.model }}</h3>
+                    <div class="plate-badge">{{ stats.most_used_truck.license_plate }}</div>
+                    <div class="highlight-meta">
+                        <span>Zakázek: <strong>{{ stats.most_used_truck.trips_count }}</strong></span>
+                        <span>Ujeto: <strong>{{ "{:,.1f}".format(stats.most_used_truck.driven_km) }} km</strong></span>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="empty-text">Zatím nebyly zaznamenány žádné jízdy.</p>
+        {% endif %}
+    </div>
+
+    <div class="highlight-card">
+        <div class="card-badge">NEJZISKOVĚJŠÍ TRASA</div>
+        {% if stats.top_route %}
+            <div class="route-highlight">
+                <div class="route-cities">
+                    <span class="city">{{ stats.top_route.origin_city }}</span>
+                    <span class="route-arrow">&rarr;</span>
+                    <span class="city">{{ stats.top_route.destination_city }}</span>
+                </div>
+                <div class="route-stats">
+                    <div class="route-stat-item">
+                        <span class="lbl">Celkový čistý zisk</span>
+                        <span class="val profit-green">{{ "{:,.2f}".format(stats.top_route.total_profit) }} €</span>
+                    </div>
+                    <div class="route-stat-item">
+                        <span class="lbl">Průměr / jízdu</span>
+                        <span class="val">{{ "{:,.2f}".format(stats.top_route.avg_profit) }} €</span>
+                    </div>
+                    <div class="route-stat-item">
+                        <span class="lbl">Frekvence</span>
+                        <span class="val">{{ stats.top_route.count }}x odjeto</span>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="empty-text">Zatím žádné trasy.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Graf vývoje zakázek -->
+<section class="dashboard-chart-card">
+    <div class="card-header-flex">
+        <h2>Ekonomika posledních zakázek (Zisk vs. Náklady na naftu)</h2>
+        <span class="chart-tag">Telemetrická křivka</span>
+    </div>
+    <div class="chart-container">
+        <canvas id="profitChart" height="90"></canvas>
+    </div>
+</section>
+
+<!-- Poslední zakázky -->
+<section class="recent-trips-card">
+    <div class="card-header-flex">
+        <h2>Poslední odjeté zakázky</h2>
+        <a href="{{ url_for('logbook') }}" class="link-more">Zobrazit celý logbook &rarr;</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Trasa</th>
+                    <th>Tahač</th>
+                    <th>Náklad</th>
+                    <th>Vzdálenost</th>
+                    <th>Spotřeba paliva</th>
+                    <th>Náklady</th>
+                    <th>Čistý zisk</th>
+                    <th>Dokončeno</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trip in recent_trips %}
+                <tr>
+                    <td>
+                        <strong class="route-text">{{ trip.origin_city }} &rarr; {{ trip.destination_city }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge-truck">{{ trip.truck_brand }} {{ trip.truck_model }}</span>
+                    </td>
+                    <td>
+                        {{ trip.cargo_name }} <span class="dim-text">({{ trip.cargo_weight_t }} t)</span>
+                    </td>
+                    <td class="num">{{ "{:,.1f}".format(trip.distance_km) }} km</td>
+                    <td class="num">{{ "{:,.1f}".format(trip.fuel_consumed_l) }} L <span class="sub-num">({{ trip.effective_consumption_l_100km }} l/100km)</span></td>
+                    <td class="num text-danger">{{ "{:,.2f}".format(trip.fuel_cost) }} €</td>
+                    <td class="num text-success"><strong>+{{ "{:,.2f}".format(trip.net_profit) }} €</strong></td>
+                    <td class="dim-text">{{ trip.completed_at[:16] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center empty-cell">Zatím nebyla vložena žádná jízda. Klikněte na "Zaznamenat jízdu".</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chartLabels = {{ stats.chart_labels | tojson }};
+    const chartProfits = {{ stats.chart_profits | tojson }};
+    const chartFuelCosts = {{ stats.chart_fuel_costs | tojson }};
+
+    if (document.getElementById('profitChart') && chartLabels.length > 0) {
+        const ctx = document.getElementById('profitChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: 'Čistý zisk (€)',
+                        data: chartProfits,
+                        backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                        borderColor: '#10b981',
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                    },
+                    {
+                        label: 'Náklady na palivo (€)',
+                        data: chartFuelCosts,
+                        backgroundColor: 'rgba(239, 68, 68, 0.65)',
+                        borderColor: '#ef4444',
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#cbd5e1', font: { family: 'Outfit', size: 12 } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#161b22',
+                        borderColor: '#30363d',
+                        borderWidth: 1,
+                        titleColor: '#f59e0b',
+                        bodyColor: '#e2e8f0',
+                        padding: 12
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 11 } },
+                        grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                    },
+                    y: {
+                        ticks: { color: '#94a3b8', callback: (val) => val + ' €' },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

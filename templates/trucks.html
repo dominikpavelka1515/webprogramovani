@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}ETS2 Správa vozového parku (Trucks){% endblock %}
+{% block page_title %}Vozový park & Tahače{% endblock %}
+{% block page_subtitle %}Evidence tahačů, technických parametrů nádrže, spotřeby a stavu tachometrů{% endblock %}
+
+{% block content %}
+<div class="trucks-layout">
+    <!-- Seznam tahačů -->
+    <div class="trucks-grid">
+        {% for truck in trucks %}
+        <div class="truck-card">
+            <div class="truck-card-header">
+                <div class="truck-meta">
+                    <span class="truck-brand-badge">{{ truck.brand }}</span>
+                    <h3 class="truck-name">{{ truck.model }}</h3>
+                </div>
+                <div class="plate-badge">{{ truck.license_plate }}</div>
+            </div>
+
+            <div class="truck-odometer-box">
+                <span class="odometer-label">STAV TACHOMETRU</span>
+                <span class="odometer-digits">{{ "{:,.1f}".format(truck.current_odometer_km) }} <small>KM</small></span>
+            </div>
+
+            <div class="truck-specs-grid">
+                <div class="spec-item">
+                    <span class="spec-label">Objem nádrže</span>
+                    <span class="spec-val">{{ "{:,.0f}".format(truck.tank_capacity_l) }} L</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Základní spotřeba</span>
+                    <span class="spec-val">{{ truck.base_consumption_l_100km }} l/100km</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Teoretický dojezd</span>
+                    <span class="spec-val">
+                        {{ "{:,.0f}".format((truck.tank_capacity_l / truck.base_consumption_l_100km) * 100) }} km
+                    </span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Stav v garáži</span>
+                    <span class="spec-val text-success">Aktivní tahač</span>
+                </div>
+            </div>
+
+            {% if truck.notes %}
+                <div class="truck-notes">
+                    <span class="notes-tag">Poznámka:</span> {{ truck.notes }}
+                </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="empty-cell">Zatím nemáte v garáži žádný tahač. Přidejte svůj první tahač formulářem níže.</div>
+        {% endfor %}
+    </div>
+
+    <!-- Formulář pro přidání nového tahače -->
+    <div class="form-card add-truck-card">
+        <div class="card-header-flex">
+            <h2>Přidat nový tahač do flotily</h2>
+        </div>
+        
+        <form action="{{ url_for('trucks') }}" method="POST">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="brand">Značka výrobce *</label>
+                    <select name="brand" id="brand" required>
+                        <option value="Scania">Scania</option>
+                        <option value="Volvo">Volvo</option>
+                        <option value="MAN">MAN</option>
+                        <option value="DAF">DAF</option>
+                        <option value="Mercedes-Benz">Mercedes-Benz</option>
+                        <option value="Renault">Renault Trucks</option>
+                        <option value="Iveco">Iveco</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="model">Model & konfigurace *</label>
+                    <input type="text" name="model" id="model" placeholder="např. FH16 750 Globetrotter" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="license_plate">Registrační značka (SPZ) *</label>
+                    <input type="text" name="license_plate" id="license_plate" placeholder="např. 1AB 1234" required>
+                </div>
+                <div class="form-group">
+                    <label for="tank_capacity_l">Kapacita nádrže (litry) *</label>
+                    <input type="number" step="10" name="tank_capacity_l" id="tank_capacity_l" value="1400" required min="100">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="base_consumption_l_100km">Průměrná spotřeba bez zátěže (l/100km) *</label>
+                    <input type="number" step="0.1" name="base_consumption_l_100km" id="base_consumption_l_100km" value="30.5" required min="5">
+                </div>
+                <div class="form-group">
+                    <label for="current_odometer_km">Počáteční stav tachometru (km)</label>
+                    <input type="number" step="0.1" name="current_odometer_km" id="current_odometer_km" value="0.0" min="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Poznámka (převodovka, retardér, konfigurace náprav)</label>
+                <input type="text" name="notes" id="notes" placeholder="např. 6x2/4 tahač, 16st. Allison převodovka">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <span>Přidat tahač do garáže</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

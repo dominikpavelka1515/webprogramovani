@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ETS2 Telemetry Logbook{% endblock %}</title>
+    <!-- Google Fonts: Orbitron & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Boční navigace / Cockpit Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-badge-box">LOG</div>
+                <div class="brand-text">
+                    <span class="brand-title">ETS2 LOGBOOK</span>
+                    <span class="brand-sub">TELEMETRY & FLEET</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('logbook') }}" class="nav-item {% if request.endpoint == 'logbook' %}active{% endif %}">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Záznam tras (Logbook)</span>
+                </a>
+                <a href="{{ url_for('trucks') }}" class="nav-item {% if request.endpoint == 'trucks' %}active{% endif %}">
+                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                    <span>Vozový park (Tahače)</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-telemetry-status">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span class="status-label">SDK Telemetry Standby</span>
+                </div>
+                <div class="status-meta">Localhost :5000 | SQLite v3</div>
+            </div>
+        </aside>
+
+        <!-- Hlavní obsah -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <h1>{% block page_title %}Přehled dispečinku{% endblock %}</h1>
+                    <p class="topbar-desc">{% block page_subtitle %}Sledování tras, spotřeby nafty a ekonomiky přepravy{% endblock %}</p>
+                </div>
+                <div class="topbar-actions">
+                    <a href="{{ url_for('logbook') }}#new-trip" class="btn btn-primary">
+                        <span>+ Zaznamenat jízdu</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Flash zprávy -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <span class="alert-icon">{% if category == 'success' %}&#10003;{% else %}!{% endif %}</span>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="content-body">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
